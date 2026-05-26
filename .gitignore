@@ -1,0 +1,19 @@
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+
+# Local-only Claude Code config
+.claude/settings.local.json
+
+# Personal voice training data (each user seeds their own)
+voice/*.md
+voice/*.txt
+!voice/README.md
+
+# Generated outputs stay local
+outputs/*
+!outputs/.gitkeep
+
+# Optional niche allowlist is local
+niche.yaml
