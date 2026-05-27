@@ -4,17 +4,17 @@ A [Claude Code](https://claude.com/claude-code) agent that runs your X (Twitter)
 
 Daily pulse on your timeline and analytics. Post and thread drafts in your voice. Reply-target hunting in your niche. Weekly engagement debriefs. All driven by six small skills you can read, fork, and rewrite.
 
-Backed by the [x-mcp](https://github.com/INFATOSHI/x-mcp) MCP server for the X API plumbing.
+Backed by a [forked + patched x-mcp](https://github.com/rohanc2k4/x-mcp) for the X API plumbing. The fork removes a hidden post-text mutation in upstream that appended a promotional disclosure to every outgoing tweet.
 
 ## The skills
 
 | Command | What it does |
 |---|---|
-| `/x-pulse` | Morning brief from your timeline + mentions + last 10 posts' metrics |
+| `/x-pulse` | Morning brief from your timeline, mentions, and last 10 posts' metrics |
 | `/x-draft <topic>` | Drafts a single post in your voice. Diff-and-approve gate |
 | `/x-targets` | Surfaces fresh, high-velocity posts in your niche worth a manual reply |
-| `/x-post <draft>` | Ships a drafted post via the MCP. Typed `post` confirmation required |
-| `/x-thread <topic>` | Drafts a multi-post thread. Manual paste to ship (API has self-reply restrictions) |
+| `/x-post <draft>` | Ships a drafted post via the MCP. Per-post hash-code confirmation required |
+| `/x-thread <topic>` | Drafts a multi-post thread. Manual paste to ship; programmatic posting not supported (Feb 2026 self-reply restrictions) |
 | `/x-debrief` | Sunday review: wins, misses, patterns, next-week actions |
 
 ## Why this exists
@@ -25,15 +25,20 @@ It does NOT auto-reply, auto-like, or auto-engage. The Feb 2026 X API restrictio
 
 ## Setup
 
-### 1. Set up x-mcp
+### 1. Set up the x-mcp fork
 
-The agent calls the X API through the [x-mcp](https://github.com/INFATOSHI/x-mcp) MCP server. Follow its README to:
+The agent calls the X API through [rohanc2k4/x-mcp](https://github.com/rohanc2k4/x-mcp), a fork of Infatoshi/x-mcp with one patch: upstream hardcoded a `[<model> on behalf of @elliotarledge]` suffix on every outgoing tweet. The fork removes it. Tweets ship verbatim.
 
-1. Clone and build x-mcp locally.
-2. Get five X API credentials from the [X Developer Portal](https://developer.x.com/en/portal/dashboard).
-3. Wire the MCP into Claude Code's config.
+To set up:
 
-The full walkthrough is in x-mcp's `LLMs.md` — paste it into a fresh Claude Code session and it'll guide you step by step.
+```bash
+git clone https://github.com/rohanc2k4/x-mcp.git
+cd x-mcp
+npm install
+npm run build
+```
+
+Then get five X API credentials from the [X Developer Portal](https://developer.x.com/en/portal/dashboard) and wire the MCP into Claude Code's config (see x-mcp's README for the exact config block). Make sure your access token has write permission (otherwise posting fails with a 403; see x-mcp's troubleshooting section).
 
 ### 2. Clone this repo
 
@@ -42,11 +47,19 @@ git clone https://github.com/rohanc2k4/x-advisor.git
 cd x-advisor
 ```
 
-### 3. Seed `voice/`
+### 3. Create `config.yaml`
 
-Drop 10-20 of your best X posts into `voice/` as plain markdown. See `voice/README.md`. Without this, `/x-draft` and `/x-thread` have no voice signal and produce generic AI copy.
+```bash
+cp config.example.yaml config.yaml
+```
 
-### 4. Optional: write `niche.yaml`
+Edit `config.yaml`. Set `handle` (your X handle without the leading `@`) and `timezone` (IANA, e.g. `America/New_York`). The agent caches your numeric `user_id` on first run.
+
+### 4. Seed `voice/`
+
+Drop 10-20 of your best X posts into `voice/` as plain markdown. See `voice/README.md`. Without this, `/x-draft` and `/x-thread` have no voice signal and the agent refuses to draft generic copy.
+
+### 5. Optional: write `niche.yaml`
 
 `/x-targets` searches a set of in-niche accounts. By default it uses everyone you follow (capped at 100). For sharper targeting, list the accounts that matter:
 
@@ -60,7 +73,7 @@ niche:
     tag: ai-tooling
 ```
 
-### 5. Use it
+### 6. Use it
 
 Open Claude Code in this repo. Try:
 
@@ -73,24 +86,24 @@ That's the daily kickoff. Then read the brief, run `/x-targets`, draft a post or
 ## Daily rhythm
 
 ```
-morning  → /x-pulse → read the brief, set focus for the day
-mid-day  → /x-targets → 30-60 min on manual replies to the top of the list
-ad-hoc   → /x-draft "<topic>" → /x-post latest, when an idea hits
-sunday   → /x-debrief → assess the week, adjust next week's plan
+morning   -> /x-pulse    -> read the brief, set focus for the day
+mid-day   -> /x-targets  -> 30-60 min on manual replies to the top of the list
+ad-hoc    -> /x-draft "<topic>" -> /x-post latest, when an idea hits
+sunday    -> /x-debrief  -> assess the week, adjust next week's plan
 ```
 
-## API constraints (read once, save yourself surprise later)
+## API constraints worth knowing
 
-x-mcp's README has the full list. The ones that affect this agent:
+x-mcp wraps the X API. The X API has progressively restricted automated clients through 2025-2026:
 
-- **Programmatic replies** restricted on all self-serve tiers as of Feb 2026. The MCP can only reply if the original poster @mentioned or quoted you. The agent doesn't try to. It surfaces reply targets; you reply manually with your account's Premium reply-boost doing the visibility work.
-- **Programmatic likes** removed from Free tier. Basic+ tier ($200/mo) is needed for `like_tweet`. The agent doesn't depend on it.
+- **Programmatic replies** restricted on all self-serve tiers (Feb 2026). The MCP can only reply if the original poster @mentioned or quoted you. The agent does not try to. It surfaces reply targets; you reply manually with your account's Premium reply-boost doing the visibility work.
+- **Programmatic likes** removed from Free tier (Aug 2025). Basic+ tier is required for `like_tweet`. The agent doesn't depend on it.
 - **Post volume**: Free tier caps at 500/month. More than enough for daily posting.
 - **Bookmarks** need Basic+ tier. The agent skips bookmark features on Free.
 
 ## Design principles
 
-- **You stay in the loop**: nothing posts without typed `post` confirmation. The friction is the point.
+- **You stay in the loop**: nothing posts without typing a per-post hash code displayed alongside the draft. The friction is the point.
 - **Voice is gated by `voice/`**: drafts are only as good as the corpus. Curate it.
 - **One file per skill**: read `.claude/skills/*.md` to see exactly what each skill does.
 - **Outputs are local**: everything the agent generates lands in `outputs/`, which is gitignored. Your drafts and analytics never leave your machine.
@@ -98,8 +111,9 @@ x-mcp's README has the full list. The ones that affect this agent:
 
 ## Related
 
-- [agentic-brain](https://github.com/rohanc2k4/agentic-brain) — the general-purpose Claude Code framework this agent's skill conventions came from
-- [x-mcp](https://github.com/INFATOSHI/x-mcp) — the MCP server this agent calls into
+- [agentic-brain](https://github.com/rohanc2k4/agentic-brain), the general-purpose Claude Code framework this agent's skill conventions came from
+- [rohanc2k4/x-mcp](https://github.com/rohanc2k4/x-mcp), the patched MCP this agent calls into
+- [Infatoshi/x-mcp](https://github.com/Infatoshi/x-mcp), upstream MCP this repo forks from
 
 ## License
 

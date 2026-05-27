@@ -1,5 +1,5 @@
 ---
-description: Find high-leverage reply targets in your niche. Ranked by engagement velocity.
+description: Find high-value reply targets in your niche. Ranked by engagement velocity.
 argument-hint: [max_age_hours] [max_results]
 ---
 

@@ -21,16 +21,16 @@ This is where you teach the agent how you sound.
 
 - After a post performs surprisingly well: add it.
 - After a post you regret posting: don't add it (and remove anything similar already here).
-- Monthly review: prune the bottom third.
+- Monthly: prune the bottom third.
 
 ## File format
 
-Plain markdown. The agent reads every `.md` and `.txt` file in this directory.
+Plain markdown or plain text. The agent reads every `.md` and `.txt` file in this directory EXCEPT any file named `README.md` (at any depth). This file is documentation; it's explicitly excluded from the corpus.
 
 Example file (`my-posts.md`):
 
 ```
-# my voice — pinned examples
+# my voice, pinned examples
 
 ---
 

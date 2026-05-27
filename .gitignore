@@ -17,3 +17,9 @@ outputs/*
 
 # Optional niche allowlist is local
 niche.yaml
+
+# Local config (handle, timezone, cached user_id, tier)
+config.yaml
+
+# Cached state (resolved user_id, last-seen IDs, etc.)
+.cache/

@@ -1,0 +1,18 @@
+# Copy this to config.yaml and fill in your details.
+# config.yaml is gitignored so it stays local.
+
+# Your X handle, without the leading @.
+# Example: rohan_2k4
+handle: your_handle_here
+
+# Your IANA timezone for ISO week math and time-of-day labels.
+# Examples: America/New_York, Europe/London, Asia/Singapore
+timezone: America/New_York
+
+# Optional: your numeric X user_id. The agent resolves this on first run
+# via get_user and caches it; only set this if you want to skip that step.
+# user_id: "1234567890"
+
+# Optional: your X subscription tier. Affects char limit checks.
+# Values: free | premium
+# tier: free
